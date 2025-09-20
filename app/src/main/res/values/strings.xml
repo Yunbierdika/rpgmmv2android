@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">YourGameName</string>
+    <string name="back_pressed_title">提示</string>
+    <string name="back_pressed_message">您确定要退出游戏吗？未保存的存档将会丢失。</string>
+    <string name="back_pressed_positive">确定</string>
+    <string name="back_pressed_negative">取消</string>
+</resources>
