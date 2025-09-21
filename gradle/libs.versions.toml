@@ -15,4 +15,3 @@ androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "j
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-
