@@ -36,6 +36,4 @@ android {
 dependencies {
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.webkit)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
 }
