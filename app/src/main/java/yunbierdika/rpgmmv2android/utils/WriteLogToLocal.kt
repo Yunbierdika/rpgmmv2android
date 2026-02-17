@@ -8,8 +8,9 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
-import java.text.SimpleDateFormat
+import java.text.DateFormat
 import java.util.Date
+import java.util.Locale
 
 class WriteLogToLocal(
     private val activity: Activity
@@ -61,7 +62,8 @@ class WriteLogToLocal(
                 OutputStreamWriter(fos, StandardCharsets.UTF_8).use { osw ->
                     BufferedWriter(osw).use { writer ->
                         // 构建日志条目
-                        val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Date())
+                        val timestamp = DateFormat.getDateTimeInstance(DateFormat.MEDIUM,
+                            DateFormat.MEDIUM, Locale.getDefault()).format(Date())
 
                         val logEntry = when (type) {
                             "info" -> "[$timestamp] INFO: $message"
