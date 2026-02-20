@@ -11,6 +11,8 @@ import android.view.View
 import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.view.WindowManager
+import android.webkit.ConsoleMessage
+import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -147,6 +149,20 @@ class MainActivity : ComponentActivity() {
             override fun onReceivedHttpError(view: WebView?, request: WebResourceRequest?, errorResponse: WebResourceResponse?) {
                 super.onReceivedHttpError(view, request, errorResponse)
                 writeLogToLocal.logError("HTTP Error: ${errorResponse?.statusCode} URL: ${request?.url}")
+            }
+        }
+
+        // 捕获控制台日志
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
+                consoleMessage?.let {
+                    val cleanSource = it.sourceId()?.removePrefix("https://appassets.androidplatform.net/") ?: "unknown"
+                    val message = it.message() ?: ""
+                    val lineNumber = it.lineNumber()
+
+                    writeLogToLocal.logDebug("[JS:${cleanSource}:${lineNumber}] $message")
+                }
+                return true
             }
         }
 
