@@ -16,7 +16,6 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
-import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
@@ -82,39 +81,30 @@ class MainActivity : ComponentActivity() {
 
         // 配置WebView设置
         webView.settings.apply {
-            // 启用WebView中的JavaScript支持
+            // 核心功能：启用 JavaScript、DOM 存储、自动播放
             javaScriptEnabled = true
-            // 启用DOM存储支持
             domStorageEnabled = true
-            // 允许媒体内容在没有用户手势的情况下自动播放
             mediaPlaybackRequiresUserGesture = false
 
-            // 允许WebView适应屏幕宽度（启用视口支持）
+            // 移动端适配：启用视口支持，使页面自适应屏幕
             useWideViewPort = true
             loadWithOverviewMode = true
 
-            // 允许WebView访问本地文件
-            allowFileAccess = true
+            // 限制不必要的文件访问，提高安全性
+            allowFileAccess = false          // 禁止 file:// 协议访问
+            allowContentAccess = false       // 禁止 content:// 协议访问
 
-            // 设置缓存模式为本地缓存模式
-            cacheMode = WebSettings.LOAD_CACHE_ONLY
-
-            // 图片自动加载
-            loadsImagesAutomatically = true
-
-            // 多窗口支持
-            setSupportMultipleWindows(true)
-            javaScriptCanOpenWindowsAutomatically = true
-
-            // 禁止系统自动缩放字体，避免文字抽搐、变大
-            textZoom = 100
-
-            // 优化缩放体验
+            // 禁用缩放，避免页面抖动（部分设备缩放后显示异常）
+            setSupportZoom(false)
             builtInZoomControls = false
             displayZoomControls = false
 
-            // 防止某些设备缩放导致页面抖动
-            setSupportZoom(false)
+            // 固定字体缩放比例，防止系统字体大小影响布局
+            textZoom = 100
+
+            // 多窗口支持（可选配置，若页面无需打开新窗口可移除）
+            setSupportMultipleWindows(true)
+            javaScriptCanOpenWindowsAutomatically = true
         }
 
         // 背景色
