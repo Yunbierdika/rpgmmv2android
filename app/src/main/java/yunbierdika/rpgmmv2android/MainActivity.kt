@@ -64,7 +64,7 @@ class MainActivity : ComponentActivity() {
                 AlertDialog.Builder(this@MainActivity)
                     .setTitle(R.string.back_pressed_title)
                     .setMessage(R.string.back_pressed_message)
-                    .setPositiveButton(R.string.back_pressed_positive) { dialog: DialogInterface?, which: Int -> finish() }
+                    .setPositiveButton(R.string.back_pressed_positive) { _: DialogInterface?, _: Int -> finish() }
                     .setNegativeButton(R.string.back_pressed_negative, null)
                     .show()
             }
