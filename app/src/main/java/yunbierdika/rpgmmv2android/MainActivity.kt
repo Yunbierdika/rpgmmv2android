@@ -22,10 +22,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.webkit.WebViewAssetLoader
 import yunbierdika.rpgmmv2android.utils.JavaScriptInterface
+import yunbierdika.rpgmmv2android.utils.RenderConfigManager
 import yunbierdika.rpgmmv2android.utils.WriteLogToLocal
 
 class MainActivity : ComponentActivity() {
-
+    // RPGMMV渲染模式
+    private lateinit var rpgRenderMode: String
+    // WebView渲染模式
+    private lateinit var webviewLayer: String
     // WebView实例
     private lateinit var gameWebView: WebView
 
@@ -42,15 +46,28 @@ class MainActivity : ComponentActivity() {
         // 初始化日志输出实例
         WriteLogToLocal.init(this)
 
+        // 初始化配置文件
+        RenderConfigManager.init(this)
+
+        // 读取config.txt得到渲染模式配置
+        val map = RenderConfigManager.readConfig()
+        rpgRenderMode = map?.get("rpg_render_mode").toString().lowercase()
+        webviewLayer = map?.get("webview_layer").toString().lowercase()
+
         // 初始化 WebView
         gameWebView = setupGameWebView()
         setContentView(gameWebView)
 
         // 仅在savedInstanceState为空时加载初始URL
-        if (savedInstanceState == null)
+        if (savedInstanceState == null) {
             // 加载游戏
-            gameWebView.loadUrl("https://appassets.androidplatform.net/assets/index.html")
-        else
+            val url = "https://appassets.androidplatform.net/assets/index.html"
+            when(rpgRenderMode) {
+                "webgl" -> gameWebView.loadUrl("$url?webgl")
+                "canvas" -> gameWebView.loadUrl("$url?canvas")
+                else -> gameWebView.loadUrl(url)
+            }
+        } else
             gameWebView.restoreState(savedInstanceState)
 
         // 拦截返回键误操作
@@ -103,8 +120,12 @@ class MainActivity : ComponentActivity() {
         // 背景色
         webView.setBackgroundColor(Color.BLACK)
 
-        // 加速策略改为默认
-        webView.setLayerType(View.LAYER_TYPE_NONE, null)
+        // 加速策略
+        when(webviewLayer) {
+            "hardware" -> webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+            "software" -> webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+            else -> webView.setLayerType(View.LAYER_TYPE_NONE, null)
+        }
 
         // 添加JavaScript接口
         webView.addJavascriptInterface(JavaScriptInterface(this), "AndroidBridge")
