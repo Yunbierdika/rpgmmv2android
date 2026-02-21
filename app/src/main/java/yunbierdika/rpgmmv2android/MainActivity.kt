@@ -29,9 +29,6 @@ class MainActivity : ComponentActivity() {
     // WebView实例
     private lateinit var gameWebView: WebView
 
-    // 日志输出实例
-    private lateinit var writeLogToLocal: WriteLogToLocal
-
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,22 +40,21 @@ class MainActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         // 初始化日志输出实例
-        writeLogToLocal = WriteLogToLocal(this)
+        WriteLogToLocal.init(this)
 
         // 初始化 WebView
         gameWebView = setupGameWebView()
         setContentView(gameWebView)
 
         // 仅在savedInstanceState为空时加载初始URL
-        if (savedInstanceState == null) {
+        if (savedInstanceState == null)
             // 加载游戏
             gameWebView.loadUrl("https://appassets.androidplatform.net/assets/index.html")
-        } else {
+        else
             gameWebView.restoreState(savedInstanceState)
-        }
 
-        // 创建 OnBackPressedCallback，拦截返回键误操作
-        val callback: OnBackPressedCallback = object : OnBackPressedCallback(true) {
+        // 拦截返回键误操作
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 // 弹出确认框
                 AlertDialog.Builder(this@MainActivity)
@@ -68,10 +64,7 @@ class MainActivity : ComponentActivity() {
                     .setNegativeButton(R.string.back_pressed_negative, null)
                     .show()
             }
-        }
-
-        // 将 callback 添加到 OnBackPressedDispatcher
-        onBackPressedDispatcher.addCallback(this, callback)
+        })
     }
 
     // 启动游戏方法
@@ -114,10 +107,7 @@ class MainActivity : ComponentActivity() {
         webView.setLayerType(View.LAYER_TYPE_NONE, null)
 
         // 添加JavaScript接口
-        webView.addJavascriptInterface(
-            JavaScriptInterface(this, writeLogToLocal),
-            "AndroidBridge"
-        )
+        webView.addJavascriptInterface(JavaScriptInterface(this), "AndroidBridge")
 
         // 使用 WebViewAssetLoader 代替已弃用的 allowUniversalAccessFromFileURLs 方法
         val assetLoader = WebViewAssetLoader.Builder()
@@ -132,13 +122,13 @@ class MainActivity : ComponentActivity() {
             // 捕获 WebView 错误
             override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
                 super.onReceivedError(view, request, error)
-                writeLogToLocal.logError("WebView Error: ${error?.description} URL: ${request?.url}")
+                WriteLogToLocal.logError("WebView Error: ${error?.description} URL: ${request?.url}")
             }
 
             // 捕获 HTTP 错误
             override fun onReceivedHttpError(view: WebView?, request: WebResourceRequest?, errorResponse: WebResourceResponse?) {
                 super.onReceivedHttpError(view, request, errorResponse)
-                writeLogToLocal.logError("HTTP Error: ${errorResponse?.statusCode} URL: ${request?.url}")
+                WriteLogToLocal.logError("HTTP Error: ${errorResponse?.statusCode} URL: ${request?.url}")
             }
         }
 
@@ -150,7 +140,7 @@ class MainActivity : ComponentActivity() {
                     val message = it.message() ?: ""
                     val lineNumber = it.lineNumber()
 
-                    writeLogToLocal.logDebug("[JS:${cleanSource}:${lineNumber}] $message")
+                    WriteLogToLocal.logDebug("[JS:${cleanSource}:${lineNumber}] $message")
                 }
                 return true
             }
@@ -184,9 +174,7 @@ class MainActivity : ComponentActivity() {
     // 视图重新聚焦时执行全屏模式
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) {
-            hideSystemUI()
-        }
+        if (hasFocus) hideSystemUI()
     }
 
     // 配置变化时重新隐藏系统 UI
@@ -209,7 +197,6 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        // 销毁 WebView
         gameWebView.apply {
             stopLoading()
             loadUrl("about:blank")
@@ -223,13 +210,11 @@ class MainActivity : ComponentActivity() {
     // 保存 WebView 状态，应对切换应用时刷新问题
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        // 保存状态
         gameWebView.saveState(outState)
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
-        // 恢复状态
         gameWebView.restoreState(savedInstanceState)
     }
 }

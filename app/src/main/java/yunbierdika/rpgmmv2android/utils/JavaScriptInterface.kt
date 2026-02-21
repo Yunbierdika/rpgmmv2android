@@ -4,17 +4,17 @@ import android.app.Activity
 import android.webkit.JavascriptInterface
 import java.io.File
 
-class JavaScriptInterface(
-    private val activity: Activity,
-    private val writeLogToLocal: WriteLogToLocal
-) {
-    private val saveFileManager = SaveFileManager(activity, writeLogToLocal)
+class JavaScriptInterface(private val activity: Activity) {
+    init {
+        // 初始化存档管理器实例
+        SaveFileManager.init(activity)
+    }
 
     // 获取存档目录
     private fun getSaveDir(): File {
         val saveDir = File(activity.getExternalFilesDir(null), "save")
         if (!saveDir.exists() && !saveDir.mkdirs()) {
-            writeLogToLocal.logError("Failed to create save directory: ${saveDir.absolutePath}")
+            WriteLogToLocal.logError("Failed to create save directory: ${saveDir.absolutePath}")
         }
         return saveDir
     }
@@ -29,13 +29,13 @@ class JavaScriptInterface(
     // 将发送过来的存档保存到指定目录
     @JavascriptInterface
     fun saveGameData(saveData: String, fileName: String) {
-        saveFileManager.saveGameData(saveData, fileName)
+        SaveFileManager.saveGameData(saveData, fileName)
     }
 
     // 加载存档，返回值为存档文件里的内容
     @JavascriptInterface
     fun loadGameData(fileName: String): String? {
-        return saveFileManager.loadGameData(fileName)
+        return SaveFileManager.loadGameData(fileName)
     }
 
     // 判断存档文件是否存在
@@ -53,7 +53,7 @@ class JavaScriptInterface(
         val saveFile = File(targetDir, "common.rpgsave")
 
         if (saveFile.exists() && !saveFile.delete()) {
-            writeLogToLocal.logError("Failed to delete common save: ${saveFile.absolutePath}")
+            WriteLogToLocal.logError("Failed to delete common save: ${saveFile.absolutePath}")
         }
     }
 }

@@ -1,6 +1,6 @@
 package yunbierdika.rpgmmv2android.utils
 
-import android.app.Activity
+import android.content.Context
 import android.util.Log
 import java.io.BufferedReader
 import java.io.File
@@ -10,26 +10,23 @@ import java.io.IOException
 import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
 
-class SaveFileManager(
-    activity: Activity,
-    private val writeLogToLocal: WriteLogToLocal
-) {
-    private val tag = "SaveFileManager"
+object SaveFileManager {
+    private lateinit var saveDir: File
+    private lateinit var cacheDir: File
+    private const val TAG = "SaveFileManager"
 
     // 需要跳过缓存的文件名
-    private val skipFileNames: List<String> = listOf(
+    private val skipFileNames = listOf(
         "global.rpgsave",
         "config.rpgsave",
         "common.rpgsave",
     )
 
-    // 目录：Android/data/包名/file/save
-    private val saveDir = File(activity.getExternalFilesDir(null), "save")
-
-    // 目录：Android/data/包名/cache/save
-    private val cacheDir = File(activity.externalCacheDir, "save")
-
-    init {
+    // 初始化路径
+    fun init(context: Context) {
+        saveDir = File(context.applicationContext.getExternalFilesDir(null), "save")
+        if (!saveDir.exists()) saveDir.mkdirs()
+        cacheDir = File(context.applicationContext.externalCacheDir, "save")
         if (!cacheDir.exists()) cacheDir.mkdirs()
     }
 
@@ -37,7 +34,7 @@ class SaveFileManager(
     fun loadGameData(fileName: String): String? {
         val saveFile = File(saveDir, fileName)
         if (!saveFile.exists()) {
-            Log.w(tag, "存档文件不存在: $fileName")
+            Log.w(TAG, "存档文件不存在: $fileName")
             return null
         }
 
@@ -55,17 +52,17 @@ class SaveFileManager(
                 val lastModified = meta[0].toLongOrNull()
                 val size = meta[1].toLongOrNull()
                 if (lastModified == saveFile.lastModified() && size == saveFile.length()) {
-                    Log.d(tag, "使用缓存: $fileName")
+                    Log.d(TAG, "使用缓存: $fileName")
                     return cacheFile.readText()
                 } else {
-                    Log.d(tag, "缓存失效，清除缓存: $fileName")
+                    Log.d(TAG, "缓存失效，清除缓存: $fileName")
                     clearCache(fileName)
                 }
             }
         }
 
         // 缓存失效 → 重新解压
-        Log.d(tag, "缓存失效，重新解压: $fileName")
+        Log.d(TAG, "缓存失效，重新解压: $fileName")
         return try {
             FileInputStream(saveFile).use { fis ->
                 val reader = BufferedReader(InputStreamReader(fis, StandardCharsets.UTF_8))
@@ -85,7 +82,7 @@ class SaveFileManager(
                 decodedData
             }
         } catch (e: IOException) {
-            writeLogToLocal.logError("Failed to load game data: ${e.message}", e)
+            WriteLogToLocal.logError("Failed to load game data: ${e.message}", e)
             null
         }
     }
@@ -101,7 +98,7 @@ class SaveFileManager(
             val cacheFile = File(cacheDir, "$fileName.cache")
             // 写入缓存
             cacheFile.writeText(saveData)
-            Log.d(tag, "写入缓存: $fileName.cache")
+            Log.d(TAG, "写入缓存: $fileName.cache")
         }
 
         val saveFile = File(saveDir, fileName)
@@ -115,25 +112,23 @@ class SaveFileManager(
                 fos.write(compressed.toByteArray())
             }
         } catch (e: IOException) {
-            writeLogToLocal.logError("Failed to save game data：${e.message}", e)
+            WriteLogToLocal.logError("Failed to save game data：${e.message}", e)
         }
 
         if (!isContainSkipFileName) {
             val metaFile = File(cacheDir, "$fileName.meta")
             // 保存校验信息
             metaFile.writeText("${saveFile.lastModified()}|${saveFile.length()}")
-            Log.d(tag, "保存校验: $fileName.meta")
+            Log.d(TAG, "保存校验: $fileName.meta")
         }
     }
 
-    /**
-     * 清除某个存档的缓存
-     */
+    // 清除某个存档的缓存
     fun clearCache(fileName: String) {
         val cacheFile = File(cacheDir, "$fileName.cache")
         val metaFile = File(cacheDir, "$fileName.meta")
         if (cacheFile.exists() && metaFile.exists()) {
-            Log.d(tag, "清除缓存: $fileName")
+            Log.d(TAG, "清除缓存: $fileName")
             cacheFile.delete()
             metaFile.delete()
         }
