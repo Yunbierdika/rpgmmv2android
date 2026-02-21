@@ -22,6 +22,8 @@
 
 - 游戏加载、保存时会将存档文件（除了global.rpgsave、config.rpgsave、common.rpgsave）缓存到 **_Android/data/game.YourGameName/cache/save/_** 目录下，下次进入游戏时，会优先从缓存中加载，提高加载、读档速度。
 
+- 可以通过配置文件（**_Android/data/game.YourGameName/files/config.txt_**）设置 RPGMMV 使用 webgl 或 canvas；设置 WebView 使用硬件加速或软件加速，以便解决部分设备的图形显示问题。
+
 ### 捐赠
 
 如果你希望这个项目，欢迎通过爱发电给我打赏：https://afdian.com/a/yun3812528
