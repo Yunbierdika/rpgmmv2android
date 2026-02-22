@@ -67,8 +67,7 @@ class MainActivity : ComponentActivity() {
                 "canvas" -> gameWebView.loadUrl("$url?canvas")
                 else -> gameWebView.loadUrl(url)
             }
-        } else
-            gameWebView.restoreState(savedInstanceState)
+        }
 
         // 拦截返回键误操作
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
