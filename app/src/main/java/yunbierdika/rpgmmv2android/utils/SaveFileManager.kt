@@ -2,13 +2,10 @@ package yunbierdika.rpgmmv2android.utils
 
 import android.content.Context
 import android.util.Log
-import java.io.BufferedReader
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
-import java.io.InputStreamReader
-import java.nio.charset.StandardCharsets
 
 object SaveFileManager {
     private lateinit var saveDir: File
@@ -24,9 +21,14 @@ object SaveFileManager {
 
     // 初始化路径
     fun init(context: Context) {
-        saveDir = File(context.applicationContext.getExternalFilesDir(null), "save")
+        val saveDirPath = context.applicationContext.getExternalFilesDir(null)
+            ?: throw IllegalStateException("无法访问外部存储目录")
+        val cacheDirPath = context.applicationContext.externalCacheDir
+            ?: throw IllegalStateException("无法访问外部缓存目录")
+
+        saveDir = File(saveDirPath, "save")
         if (!saveDir.exists()) saveDir.mkdirs()
-        cacheDir = File(context.applicationContext.externalCacheDir, "save")
+        cacheDir = File(cacheDirPath, "save")
         if (!cacheDir.exists()) cacheDir.mkdirs()
     }
 
@@ -64,9 +66,8 @@ object SaveFileManager {
         // 缓存失效 → 重新解压
         Log.d(TAG, "缓存失效，重新解压: $fileName")
         return try {
-            FileInputStream(saveFile).use { fis ->
-                val reader = BufferedReader(InputStreamReader(fis, StandardCharsets.UTF_8))
-                val base64Data = reader.readText().trim()
+            FileInputStream(saveFile).bufferedReader(Charsets.UTF_8).use { br ->
+                val base64Data = br.readText().trim()
 
                 // 使用 LZString 解码
                 val decodedData = LZString.decompressFromBase64(base64Data)
@@ -82,7 +83,8 @@ object SaveFileManager {
                 decodedData
             }
         } catch (e: IOException) {
-            WriteLogToLocal.logError("Failed to load game data: ${e.message}", e)
+            Log.e(TAG, "Failed to load game data: ${e.message}", e)
+            WriteLogToLocal.logError("Failed to load game data：${e.message}", e)
             null
         }
     }
@@ -112,6 +114,7 @@ object SaveFileManager {
                 fos.write(compressed.toByteArray())
             }
         } catch (e: IOException) {
+            Log.e(TAG, "Failed to save game data: ${e.message}", e)
             WriteLogToLocal.logError("Failed to save game data：${e.message}", e)
         }
 
@@ -132,5 +135,16 @@ object SaveFileManager {
             cacheFile.delete()
             metaFile.delete()
         }
+    }
+
+    fun existsGameSave(fileName: String): Boolean {
+        return File(saveDir, fileName).exists()
+    }
+
+    fun removeGameSave(fileName: String): Boolean {
+        val saveFile = File(saveDir, fileName)
+        if (saveFile.exists())
+            return saveFile.delete()
+        return false
     }
 }

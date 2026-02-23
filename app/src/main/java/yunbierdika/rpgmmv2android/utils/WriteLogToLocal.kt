@@ -2,24 +2,23 @@ package yunbierdika.rpgmmv2android.utils
 
 import android.content.Context
 import android.util.Log
-import java.io.BufferedWriter
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.io.OutputStreamWriter
-import java.nio.charset.StandardCharsets
 import java.text.DateFormat
 import java.util.Date
 import java.util.Locale
 
 object WriteLogToLocal {
-    private lateinit var logDir: File
-    private const val TAG: String = "WebView"
+    private lateinit var logFile: File
+    private const val TAG = "WebView"
 
     // 初始化路径
     fun init(context: Context) {
-        logDir = context.applicationContext.getExternalFilesDir(null)
+        val logDir = context.applicationContext.getExternalFilesDir(null)
             ?: throw IllegalStateException("无法访问外部存储目录")
+
+        logFile = File(logDir, "log.txt")
     }
 
     // 输出无跟踪错误日志
@@ -39,35 +38,27 @@ object WriteLogToLocal {
 
     // 将错误日志保存到指定目录
     fun writeToLogFile(type: String, message: String, e: Throwable?) {
-        // 错误日志文件
-        val logFile = File(logDir, "log.txt")
-
         try {
-            // 追加写入模式
-            FileOutputStream(logFile, true).use { fos ->
-                OutputStreamWriter(fos, StandardCharsets.UTF_8).use { osw ->
-                    BufferedWriter(osw).use { writer ->
-                        // 构建日志条目
-                        val timestamp = DateFormat.getDateTimeInstance(DateFormat.MEDIUM,
-                            DateFormat.MEDIUM, Locale.getDefault()).format(Date())
+            FileOutputStream(logFile, true).bufferedWriter(Charsets.UTF_8).use { bw ->
+                // 构建日志条目
+                val timestamp = DateFormat.getDateTimeInstance(DateFormat.MEDIUM,
+                    DateFormat.MEDIUM, Locale.getDefault()).format(Date())
 
-                        val logEntry = when (type) {
-                            "debug" -> "[$timestamp] DEBUG: $message"
-                            else -> "[$timestamp] ERROR: $message"
-                        }
+                val logEntry = when (type) {
+                    "debug" -> "[$timestamp] DEBUG: $message"
+                    else -> "[$timestamp] ERROR: $message"
+                }
 
-                        writer.write(logEntry)
-                        writer.newLine()
+                bw.write(logEntry)
+                bw.newLine()
 
-                        e?.let {
-                            writer.write(Log.getStackTraceString(e))
-                            writer.newLine()
-                        }
-                    }
+                e?.let {
+                    bw.write(Log.getStackTraceString(e))
+                    bw.newLine()
                 }
             }
-        } catch (ex: IOException) {
-            Log.e(TAG, "写入日志文件失败", ex)
+        } catch (e: IOException) {
+            Log.e(TAG, "写入日志文件失败", e)
         }
     }
 }

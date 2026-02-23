@@ -5,18 +5,16 @@ import android.webkit.JavascriptInterface
 import java.io.File
 
 class JavaScriptInterface(private val activity: Activity) {
+    private var saveDir: File = activity.getExternalFilesDir(null)
+        ?: throw IllegalStateException("无法访问外部存储目录")
+
     init {
+        saveDir = File(saveDir, "save")
+        if (!saveDir.exists() && !saveDir.mkdirs())
+            WriteLogToLocal.logError("Failed to create save directory: ${saveDir.absolutePath}")
+
         // 初始化存档管理器实例
         SaveFileManager.init(activity)
-    }
-
-    // 获取存档目录
-    private fun getSaveDir(): File {
-        val saveDir = File(activity.getExternalFilesDir(null), "save")
-        if (!saveDir.exists() && !saveDir.mkdirs()) {
-            WriteLogToLocal.logError("Failed to create save directory: ${saveDir.absolutePath}")
-        }
-        return saveDir
     }
 
     // 使结束游戏按钮功能可用
@@ -41,19 +39,13 @@ class JavaScriptInterface(private val activity: Activity) {
     // 判断存档文件是否存在
     @JavascriptInterface
     fun existsGameSave(fileName: String): Boolean {
-        val saveDir = getSaveDir()
-        val saveFile = File(saveDir, fileName)
-        return saveFile.exists()
+        return SaveFileManager.existsGameSave(fileName)
     }
 
     // 删除CommonSave插件的专用存档（用于跨周目继承点数的存档）
     @JavascriptInterface
     fun removeCommonSave() {
-        val targetDir = getSaveDir()
-        val saveFile = File(targetDir, "common.rpgsave")
-
-        if (saveFile.exists() && !saveFile.delete()) {
-            WriteLogToLocal.logError("Failed to delete common save: ${saveFile.absolutePath}")
-        }
+        val isRemove = SaveFileManager.removeGameSave("common.rpgsave")
+        if (!isRemove) WriteLogToLocal.logError("Failed to delete common save")
     }
 }
