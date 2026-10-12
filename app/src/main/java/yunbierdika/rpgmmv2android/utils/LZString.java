@@ -34,26 +34,63 @@ public class LZString {
 		return (char) map.get(character).intValue();
 	}
 	
+	/**
+	 * 【重要】这里刻意不再用 _compress(input, 6, ...) 的写法。
+	 *
+	 * RPG Maker MV 自带的 JS 版 lz-string（1.3.x）的 compressToBase64 是：
+	 *   先 compress()（16 bit/字符）得到 UTF-16 串，再把这个串当成字节流按 3 字节一组转 Base64。
+	 * 而 1.4.4 的写法（_compress(input, 6, ...) 再按 res.length()%4 补 '='）
+	 * 两者「末尾补位」的方式不同，会让最后一个 Base64 字符不一致
+	 * （实测：MV 那边输出 "...EAA"，1.4.4 输出 "...EA="），
+	 * 于是 MV 解压时解出的字节数变成奇数、数据流不完整，
+	 * decompressFromBase64 直接返回空字符串 —— 玩家表现就是
+	 * 「存档放进去了，游戏里却像根本没放存档」。
+	 *
+	 * 所以这里严格按 1.3.x 的做法实现，保证与 RPG Maker MV 完全互通。
+	 */
 	public static String compressToBase64(String input) {
 		if (input == null)
 			return "";
-		String res = LZString._compress(input, 6, new CompressFunctionWrapper() {
-			@Override
-			public char doFunc(int a) {
-				return keyStrBase64[a];
+		String res = LZString.compress(input);
+		StringBuilder sb = new StringBuilder();
+		int len = res.length();
+		int i = 0;
+		while (i < len * 2) {
+			boolean has2, has3;
+			int chr1, chr2 = 0, chr3 = 0;
+			if (i % 2 == 0) {
+				chr1 = res.charAt(i / 2) >> 8;
+				chr2 = res.charAt(i / 2) & 255;
+				has2 = true;
+				if (i / 2 + 1 < len) {
+					chr3 = res.charAt(i / 2 + 1) >> 8;
+					has3 = true;
+				} else {
+					has3 = false;
+				}
+			} else {
+				chr1 = res.charAt((i - 1) / 2) & 255;
+				if ((i + 1) / 2 < len) {
+					chr2 = res.charAt((i + 1) / 2) >> 8;
+					chr3 = res.charAt((i + 1) / 2) & 255;
+					has2 = true;
+					has3 = true;
+				} else {
+					has2 = false;
+					has3 = false;
+				}
 			}
-		});
-		switch (res.length() % 4) { // To produce valid Base64
-		default: // When could this happen ?
-		case 0:
-			return res;
-		case 1:
-			return res + "===";
-		case 2:
-			return res + "==";
-		case 3:
-			return res + "=";
+			i += 3;
+
+			int enc1 = chr1 >> 2;
+			int enc2 = ((chr1 & 3) << 4) | (has2 ? (chr2 >> 4) : 0);
+			int enc3 = has2 ? (((chr2 & 15) << 2) | (has3 ? (chr3 >> 6) : 0)) : 64;
+			int enc4 = has3 ? (chr3 & 63) : 64;
+
+			sb.append(keyStrBase64[enc1]).append(keyStrBase64[enc2])
+			  .append(keyStrBase64[enc3]).append(keyStrBase64[enc4]);
 		}
+		return sb.toString();
 	}
 	
 	public static String decompressFromBase64(final String inputStr) {
